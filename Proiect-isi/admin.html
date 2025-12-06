@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Populare DB | GlowMe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #e91e8c 100%); min-height: 100vh; padding: 40px 20px; }
+        .admin-card { max-width: 700px; margin: 0 auto; }
+        .card { border: none; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .log-output { 
+            background: #1a1a2e; 
+            color: #0f0; 
+            padding: 20px; 
+            border-radius: 12px; 
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            height: 350px;
+            overflow-y: auto;
+        }
+        .log-output::-webkit-scrollbar { width: 8px; }
+        .log-output::-webkit-scrollbar-thumb { background: #e91e8c; border-radius: 4px; }
+        .status-badge { font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="admin-card">
+        <div class="card">
+            <div class="card-header bg-dark text-white py-3">
+                <h4 class="mb-0"><i class="bi bi-database-gear me-2"></i>GlowMe - Admin Panel</h4>
+                <small class="text-muted">Populare bază de date Firebase</small>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Apasă butonul de mai jos pentru a adăuga 6 saloane demo în baza de date Firebase Firestore.
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button class="btn btn-success btn-lg" id="populateBtn">
+                                <i class="bi bi-database-add me-2"></i>Populează Saloane
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button class="btn btn-warning btn-lg" id="checkBtn">
+                                <i class="bi bi-search me-2"></i>Verifică DB
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="bi bi-terminal me-2"></i>Console Log:</h6>
+                    <span class="badge bg-secondary status-badge" id="statusBadge">Așteptare...</span>
+                </div>
+                <div class="log-output" id="logOutput">
+                    <div style="color: #888;">═══════════════════════════════════════════</div>
+                    <div style="color: #0ff;">  GlowMe Database Admin Console</div>
+                    <div style="color: #888;">═══════════════════════════════════════════</div>
+                    <div style="color: #888; margin-top: 10px;">Pregătit. Apasă un buton pentru a începe...</div>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <a href="index.html" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-arrow-left me-2"></i>Înapoi la Aplicație
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, GeoPoint, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3BhK1KxpHEZkBR4f3_qj0nccCIbYQulU",
+            authDomain: "glowme-project.firebaseapp.com",
+            projectId: "glowme-project",
+            storageBucket: "glowme-project.firebasestorage.app",
+            messagingSenderId: "580122866148",
+            appId: "1:580122866148:web:6f4e12b182dbe7575717f1"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // DOM Elements
+        const logOutput = document.getElementById('logOutput');
+        const populateBtn = document.getElementById('populateBtn');
+        const checkBtn = document.getElementById('checkBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        
+        // Log function
+        function log(message, type = 'info') {
+            const colors = { 
+                info: '#0f0', 
+                error: '#ff4444', 
+                warn: '#ffaa00', 
+                success: '#00ffaa',
+                highlight: '#ff00ff'
+            };
+            const icons = {
+                info: '●',
+                error: '✗',
+                warn: '⚠',
+                success: '✓',
+                highlight: '★'
+            };
+            const div = document.createElement('div');
+            div.style.color = colors[type] || '#0f0';
+            div.innerHTML = `<span style="opacity:0.5">[${new Date().toLocaleTimeString()}]</span> ${icons[type] || '●'} ${message}`;
+            logOutput.appendChild(div);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        function setStatus(text, color) {
+            statusBadge.textContent = text;
+            statusBadge.className = `badge bg-${color} status-badge`;
+        }
+        
+        // Demo salons data
+        const demoSalons = [
+            {
+                name: "Glow Beauty Salon",
+                address: "Str. Victoriei 45, București",
+                location: new GeoPoint(44.4378, 26.0946),
+                category: "Coafor",
+                rating: 4.8,
+                phone: "0721 123 456",
+                website: "https://glowbeauty.ro",
+                images: ["https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400"],
+                openingHours: { "Luni-Vineri": "09:00-20:00", "Sâmbătă": "10:00-18:00", "Duminică": "Închis" },
+                services: [
+                    { name: "Tuns damă", price: 50, duration: 30 },
+                    { name: "Vopsit", price: 150, duration: 90 },
+                    { name: "Coafat", price: 80, duration: 45 },
+                    { name: "Tratament păr", price: 100, duration: 60 }
+                ],
+                createdAt: Timestamp.now()
+            },
+            {
+                name: "Nails & Beauty Studio",
+                address: "Bd. Unirii 23, București",
+                location: new GeoPoint(44.4268, 26.1025),
+                category: "Nails",
+                rating: 4.6,
+                phone: "0722 234 567",
+                website: "",
+                images: ["https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400"],
+                openingHours: { "Luni-Vineri": "10:00-19:00", "Sâmbătă": "10:00-16:00", "Duminică": "Închis" },
+                services: [
+                    { name: "Manichiură simplă", price: 40, duration: 30 },
+                    { name: "Manichiură cu gel", price: 80, duration: 60 },
+                    { name: "Pedichiură", price: 70, duration: 45 },
+                    { name: "Nail art", price: 50, duration: 30 }
+                ],
+                createdAt: Timestamp.now()
+            },
+            {
+                name: "Barber Kings",
+                address: "Str. Lipscani 12, București",
+                location: new GeoPoint(44.4312, 26.0987),
+                category: "Barber",
+                rating: 4.9,
+                phone: "0723 345 678",
+                website: "https://barberkings.ro",
+                images: ["https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400"],
+                openingHours: { "Luni-Vineri": "09:00-21:00", "Sâmbătă": "10:00-20:00", "Duminică": "11:00-18:00" },
+                services: [
+                    { name: "Tuns bărbați", price: 40, duration: 25 },
+                    { name: "Bărbierit clasic", price: 30, duration: 20 },
+                    { name: "Tuns + Bărbierit", price: 60, duration: 40 },
+                    { name: "Aranjare barbă", price: 25, duration: 15 }
+                ],
+                createdAt: Timestamp.now()
+            },
+            {
+                name: "Zen Spa & Wellness",
+                address: "Calea Dorobanți 88, București",
+                location: new GeoPoint(44.4512, 26.0856),
+                category: "Spa",
+                rating: 4.7,
+                phone: "0724 456 789",
+                website: "https://zenspa.ro",
+                images: ["https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400"],
+                openingHours: { "Luni-Duminică": "10:00-22:00" },
+                services: [
+                    { name: "Masaj relaxare", price: 150, duration: 60 },
+                    { name: "Masaj terapeutic", price: 180, duration: 60 },
+                    { name: "Saună + Jacuzzi", price: 100, duration: 90 },
+                    { name: "Împachetări corporale", price: 200, duration: 75 }
+                ],
+                createdAt: Timestamp.now()
+            },
+            {
+                name: "Perfect Makeup Studio",
+                address: "Str. Franceza 28, București",
+                location: new GeoPoint(44.4289, 26.1089),
+                category: "Makeup",
+                rating: 4.5,
+                phone: "0725 567 890",
+                website: "",
+                images: ["https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400"],
+                openingHours: { "Luni-Sâmbătă": "09:00-19:00", "Duminică": "Închis" },
+                services: [
+                    { name: "Machiaj de zi", price: 100, duration: 45 },
+                    { name: "Machiaj de seară", price: 150, duration: 60 },
+                    { name: "Machiaj mireasă", price: 300, duration: 90 },
+                    { name: "Curs machiaj personal", price: 500, duration: 180 }
+                ],
+                createdAt: Timestamp.now()
+            },
+            {
+                name: "Skin Care Expert",
+                address: "Bd. Magheru 35, București",
+                location: new GeoPoint(44.4398, 26.0967),
+                category: "Cosmetica",
+                rating: 4.8,
+                phone: "0726 678 901",
+                website: "https://skincareexpert.ro",
+                images: ["https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400"],
+                openingHours: { "Luni-Vineri": "10:00-20:00", "Sâmbătă": "10:00-17:00", "Duminică": "Închis" },
+                services: [
+                    { name: "Tratament facial", price: 120, duration: 60 },
+                    { name: "Curățare ten", price: 80, duration: 45 },
+                    { name: "Peeling chimic", price: 200, duration: 30 },
+                    { name: "Microdermabraziune", price: 250, duration: 45 }
+                ],
+                createdAt: Timestamp.now()
+            }
+        ];
+        
+        // Check database
+        checkBtn.addEventListener('click', async () => {
+            setStatus('Verificare...', 'info');
+            log('Verificare bază de date...', 'info');
+            
+            try {
+                const snapshot = await getDocs(collection(db, 'salons'));
+                
+                if (snapshot.empty) {
+                    log('Baza de date este GOALĂ. Niciun salon găsit.', 'warn');
+                    setStatus('DB Goală', 'warning');
+                } else {
+                    log(`Găsite ${snapshot.size} saloane în baza de date:`, 'success');
+                    snapshot.forEach((doc, index) => {
+                        const data = doc.data();
+                        log(`  ${index + 1}. ${data.name} (${data.category}) - ID: ${doc.id}`, 'highlight');
+                    });
+                    setStatus(`${snapshot.size} saloane`, 'success');
+                }
+            } catch (error) {
+                log(`EROARE: ${error.message}`, 'error');
+                setStatus('Eroare!', 'danger');
+            }
+        });
+        
+        // Populate database
+        populateBtn.addEventListener('click', async () => {
+            populateBtn.disabled = true;
+            setStatus('Se lucrează...', 'primary');
+            
+            try {
+                // Check if already populated
+                const snapshot = await getDocs(collection(db, 'salons'));
+                
+                if (!snapshot.empty) {
+                    log(`⚠ Baza de date conține deja ${snapshot.size} saloane!`, 'warn');
+                    log('Pentru a adăuga din nou, șterge colecția "salons" din Firebase Console.', 'warn');
+                    setStatus('Deja populată', 'warning');
+                    populateBtn.disabled = false;
+                    return;
+                }
+                
+                log('═══════════════════════════════════════════', 'info');
+                log('Începe popularea bazei de date...', 'info');
+                log('═══════════════════════════════════════════', 'info');
+                
+                let count = 0;
+                for (const salon of demoSalons) {
+                    const docRef = await addDoc(collection(db, 'salons'), salon);
+                    count++;
+                    log(`✓ [${count}/${demoSalons.length}] ${salon.name}`, 'success');
+                    log(`    → Categoria: ${salon.category} | Rating: ${salon.rating}⭐`, 'info');
+                    log(`    → ID: ${docRef.id}`, 'info');
+                }
+                
+                log('═══════════════════════════════════════════', 'success');
+                log(`🎉 SUCCES! ${count} saloane adăugate în baza de date!`, 'highlight');
+                log('Acum poți accesa aplicația principală.', 'success');
+                log('═══════════════════════════════════════════', 'success');
+                
+                setStatus('Completat!', 'success');
+                
+            } catch (error) {
+                log(`EROARE: ${error.message}`, 'error');
+                console.error(error);
+                setStatus('Eroare!', 'danger');
+            } finally {
+                populateBtn.disabled = false;
+            }
+        });
+        
+        // Initial log
+        log('Firebase conectat cu succes!', 'success');
+        log(`Proiect: ${firebaseConfig.projectId}`, 'info');
+    </script>
+</body>
+</html>
