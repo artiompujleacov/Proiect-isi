@@ -1,10 +1,10 @@
-import { 
-    db, 
-    collection, 
-    addDoc, 
+import {
+    db,
+    collection,
+    addDoc,
     getDocs,
-    GeoPoint, 
-    Timestamp 
+    GeoPoint,
+    Timestamp
 } from './firebase-config.js';
 
 // Demo salons data
@@ -13,7 +13,7 @@ const demoSalons = [
         name: "Glow Beauty Salon",
         address: "Str. Victoriei 45, București",
         location: new GeoPoint(44.4378, 26.0946),
-        category: "Coafor",
+        category: ["Coafor", "Makeup"],
         rating: 4.8,
         phone: "0721 123 456",
         website: "https://glowbeauty.ro",
@@ -39,7 +39,7 @@ const demoSalons = [
         name: "Nails & Beauty Studio",
         address: "Bd. Unirii 23, București",
         location: new GeoPoint(44.4268, 26.1025),
-        category: "Nails",
+        category: ["Nails", "Cosmetica"],
         rating: 4.6,
         phone: "0722 234 567",
         website: "https://nailsbeauty.ro",
@@ -65,7 +65,7 @@ const demoSalons = [
         name: "Barber Kings",
         address: "Str. Lipscani 12, București",
         location: new GeoPoint(44.4312, 26.0987),
-        category: "Barber",
+        category: ["Barber"],
         rating: 4.9,
         phone: "0723 345 678",
         website: "https://barberkings.ro",
@@ -91,7 +91,7 @@ const demoSalons = [
         name: "Zen Spa & Wellness",
         address: "Calea Dorobanți 88, București",
         location: new GeoPoint(44.4512, 26.0856),
-        category: "Spa",
+        category: ["Spa", "Cosmetica"],
         rating: 4.7,
         phone: "0724 456 789",
         website: "https://zenspa.ro",
@@ -117,7 +117,7 @@ const demoSalons = [
         name: "Perfect Makeup Studio",
         address: "Str. Franceza 28, București",
         location: new GeoPoint(44.4289, 26.1089),
-        category: "Makeup",
+        category: ["Makeup", "Coafor"],
         rating: 4.5,
         phone: "0725 567 890",
         website: "https://perfectmakeup.ro",
@@ -143,7 +143,7 @@ const demoSalons = [
         name: "Skin Care Expert",
         address: "Bd. Magheru 35, București",
         location: new GeoPoint(44.4398, 26.0967),
-        category: "Cosmetica",
+        category: ["Cosmetica"],
         rating: 4.8,
         phone: "0726 678 901",
         website: "https://skincareexpert.ro",
@@ -180,17 +180,17 @@ const demoCategories = [
 // Populate salons
 async function populateSalons() {
     console.log("🔄 Checking existing salons...");
-    
+
     const salonsRef = collection(db, 'salons');
     const snapshot = await getDocs(salonsRef);
-    
+
     if (!snapshot.empty) {
         console.log(`⚠️ Database already has ${snapshot.size} salons. Skipping...`);
         return;
     }
-    
+
     console.log("📝 Adding demo salons...");
-    
+
     for (const salon of demoSalons) {
         try {
             const docRef = await addDoc(salonsRef, salon);
@@ -199,24 +199,24 @@ async function populateSalons() {
             console.error(`❌ Error adding ${salon.name}:`, error);
         }
     }
-    
+
     console.log("✅ Salons populated successfully!");
 }
 
 // Populate categories
 async function populateCategories() {
     console.log("🔄 Checking existing categories...");
-    
+
     const categoriesRef = collection(db, 'categories');
     const snapshot = await getDocs(categoriesRef);
-    
+
     if (!snapshot.empty) {
         console.log(`⚠️ Database already has ${snapshot.size} categories. Skipping...`);
         return;
     }
-    
+
     console.log("📝 Adding categories...");
-    
+
     for (const category of demoCategories) {
         try {
             const docRef = await addDoc(categoriesRef, category);
@@ -225,18 +225,18 @@ async function populateCategories() {
             console.error(`❌ Error adding ${category.name}:`, error);
         }
     }
-    
+
     console.log("✅ Categories populated successfully!");
 }
 
 // Main populate function
 async function populateDatabase() {
     console.log("🚀 Starting database population...\n");
-    
+
     await populateSalons();
     console.log("");
     await populateCategories();
-    
+
     console.log("\n🎉 Database population complete!");
 }
 

@@ -4,7 +4,7 @@ const ARCGIS_API_KEY = "AAPTxy8BH1VEsoebNVZXo8HurKyRKW0T3D3lBg7YtPpGSRQjCvrBOY6U
 
 let map, view, graphicsLayer;
 let salonsData = [];
-let selectedCategory = 'all';
+let selectedCategories = [];
 let mapReady = false;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,7 +27,7 @@ function handleAuthStateChange(user) {
     const authButtons = document.getElementById('authButtons');
     const userMenu = document.getElementById('userMenu');
     const userName = document.getElementById('userName');
-    
+
     if (user) {
         authButtons?.classList.add('d-none');
         userMenu?.classList.remove('d-none');
@@ -40,7 +40,7 @@ function handleAuthStateChange(user) {
 
 function initializeMap() {
     console.log("🗺️ Initializing map...");
-    
+
     require([
         "esri/config",
         "esri/Map",
@@ -50,32 +50,32 @@ function initializeMap() {
         "esri/symbols/SimpleMarkerSymbol",
         "esri/PopupTemplate",
         "esri/widgets/Locate"
-    ], function(esriConfig, Map, MapView, GraphicsLayer, Graphic, SimpleMarkerSymbol, PopupTemplate, Locate) {
-        
+    ], function (esriConfig, Map, MapView, GraphicsLayer, Graphic, SimpleMarkerSymbol, PopupTemplate, Locate) {
+
         esriConfig.apiKey = ARCGIS_API_KEY;
-        
+
         graphicsLayer = new GraphicsLayer();
-        
+
         map = new Map({
             basemap: "streets-navigation-vector",
             layers: [graphicsLayer]
         });
-        
+
         view = new MapView({
             container: "viewDiv",
             map: map,
             center: [26.1025, 44.4268],
             zoom: 13
         });
-        
+
         window.arcgisModules = { Graphic, SimpleMarkerSymbol, PopupTemplate };
-        
+
         const locateWidget = new Locate({ view: view });
-        
+
         document.getElementById('locateBtn')?.addEventListener('click', () => locateWidget.locate());
         document.getElementById('zoomInBtn')?.addEventListener('click', () => { view.zoom += 1; });
         document.getElementById('zoomOutBtn')?.addEventListener('click', () => { view.zoom -= 1; });
-        
+
         view.when(() => {
             console.log("✅ Map loaded!");
             mapReady = true;
@@ -92,7 +92,7 @@ async function loadSalons() {
     console.log("📍 Loading salons from Firebase...");
     try {
         const querySnapshot = await getDocs(collection(db, "salons"));
-        
+
         if (querySnapshot.empty) {
             console.log("⚠️ DB empty, using demo data");
             salonsData = getDemoSalons();
@@ -100,7 +100,7 @@ async function loadSalons() {
             salonsData = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 let location = null;
-                
+
                 if (data.location) {
                     const lat = data.location.latitude ?? data.location._lat;
                     const lng = data.location.longitude ?? data.location._long;
@@ -108,20 +108,20 @@ async function loadSalons() {
                         location = { latitude: lat, longitude: lng };
                     }
                 }
-                
+
                 console.log(`  → Found: ${data.name}`, location);
                 return { id: doc.id, ...data, location };
             });
         }
-        
+
         console.log(`✅ Total salons: ${salonsData.length}`);
         renderSalonList(salonsData);
         updateSalonCount(salonsData.length);
-        
+
         if (mapReady && graphicsLayer) {
             addSalonsToMap(salonsData);
         }
-        
+
     } catch (error) {
         console.error("❌ Firebase error:", error);
         salonsData = getDemoSalons();
@@ -146,10 +146,10 @@ function addSalonsToMap(salons) {
         console.warn("Map not ready");
         return;
     }
-    
+
     const { Graphic, SimpleMarkerSymbol, PopupTemplate } = window.arcgisModules;
     graphicsLayer.removeAll();
-    
+
     const colors = {
         'Coafor': '#e91e8c',
         'Nails': '#ff6b6b',
@@ -159,19 +159,19 @@ function addSalonsToMap(salons) {
         'Cosmetica': '#bb8fce',
         'Beauty salon': '#e91e8c'
     };
-    
+
     let added = 0;
     salons.forEach(salon => {
         if (!salon.location || !salon.location.latitude || !salon.location.longitude) {
             console.warn(`Skipping ${salon.name} - no location`);
             return;
         }
-        
+
         const lat = salon.location.latitude;
         const lng = salon.location.longitude;
         const categoryColor = colors[salon.category] || '#e91e8c';
         const imageUrl = salon.images?.[0] || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400';
-        
+
         const graphic = new Graphic({
             geometry: {
                 type: "point",
@@ -191,7 +191,7 @@ function addSalonsToMap(salons) {
                         <div class="popup-img-container">
                             <img src="${imageUrl}" alt="${salon.name}">
                         </div>
-                        <span class="popup-category" style="background:${categoryColor}">${salon.category}</span>
+                        <span class="popup-category" style="background:${categoryColor}">${formatCategories(salon.category)}</span>
                         <div class="popup-rating">
                             <span class="stars">${'★'.repeat(Math.floor(salon.rating || 0))}${'☆'.repeat(5 - Math.floor(salon.rating || 0))}</span>
                             <span class="rating-value">${salon.rating || 'N/A'}</span>
@@ -212,18 +212,18 @@ function addSalonsToMap(salons) {
                 `
             })
         });
-        
+
         graphicsLayer.add(graphic);
         added++;
     });
-    
+
     console.log(`✅ Added ${added} markers to map`);
 }
 
 function renderSalonList(salons) {
     const list = document.getElementById('salonList');
     if (!list) return;
-    
+
     if (!salons || salons.length === 0) {
         list.innerHTML = `
             <div class="text-center text-muted py-4">
@@ -233,7 +233,7 @@ function renderSalonList(salons) {
         `;
         return;
     }
-    
+
     list.innerHTML = salons.map(salon => `
         <div class="salon-card" data-id="${salon.id}">
             <div class="salon-card-header">
@@ -242,14 +242,14 @@ function renderSalonList(salons) {
                      onerror="this.src='https://via.placeholder.com/70?text=S'">
                 <div class="salon-info">
                     <div class="salon-name">${salon.name}</div>
-                    <span class="salon-category">${salon.category}</span>
+                    <span class="salon-category">${formatCategories(salon.category)}</span>
                     <div class="salon-rating">${'★'.repeat(Math.floor(salon.rating || 0))} ${salon.rating || 'N/A'}</div>
                 </div>
             </div>
             <div class="salon-address"><i class="bi bi-geo-alt-fill"></i> ${salon.address}</div>
         </div>
     `).join('');
-    
+
     list.querySelectorAll('.salon-card').forEach(card => {
         card.addEventListener('click', () => {
             const salon = salons.find(s => s.id === card.dataset.id);
@@ -264,10 +264,10 @@ function renderSalonList(salons) {
 
 function focusOnSalon(salon) {
     if (!view || !salon.location) return;
-    
+
     const lat = salon.location.latitude;
     const lng = salon.location.longitude;
-    
+
     view.goTo({
         center: [lng, lat],
         zoom: 17
@@ -287,9 +287,36 @@ function updateSalonCount(count) {
     if (el) el.textContent = count;
 }
 
-function filterSalons(category) {
-    selectedCategory = category;
-    const filtered = category === 'all' ? salonsData : salonsData.filter(s => s.category === category);
+// Helper pentru a obține categoriile ca array
+function getCategoriesArray(category) {
+    if (Array.isArray(category)) {
+        console.log("  📋 Category is array:", category);
+        return category;
+    } else if (typeof category === 'string') {
+        console.log("  📝 Category is string:", category);
+        return category.split(',').map(c => c.trim());
+    }
+    console.log("  ⚠️ Category is neither array nor string:", category, typeof category);
+    return [];
+}
+
+// Helper pentru a formata categoriile pentru afișare
+function formatCategories(category) {
+    const categories = getCategoriesArray(category);
+    return categories.join(', ');
+}
+
+function filterSalons(categories) {
+    console.log("🔍 Filtering by categories:", categories);
+    selectedCategories = categories;
+    const filtered = !categories || categories.length === 0 ? salonsData : salonsData.filter(s => {
+        // Verifică dacă salonul are TOATE categoriile selectate (intersecție)
+        const salonCategories = getCategoriesArray(s.category);
+        const match = categories.every(cat => salonCategories.includes(cat));
+        console.log(`  ${s.name} (${formatCategories(s.category)}):`, match ? '✓' : '✗', `needs all: [${categories.join(', ')}]`);
+        return match;
+    });
+    console.log(`📊 Filtered: ${filtered.length} salons`);
     renderSalonList(filtered);
     updateSalonCount(filtered.length);
     addSalonsToMap(filtered);
@@ -298,20 +325,20 @@ function filterSalons(category) {
 function searchSalons(query) {
     const term = query.toLowerCase().trim();
     if (!term) {
-        filterSalons(selectedCategory);
+        filterSalons(selectedCategories);
         return;
     }
-    
-    let filtered = salonsData.filter(s => 
-        s.name.toLowerCase().includes(term) || 
+
+    let filtered = salonsData.filter(s =>
+        s.name.toLowerCase().includes(term) ||
         s.address.toLowerCase().includes(term) ||
         s.category.toLowerCase().includes(term)
     );
-    
-    if (selectedCategory !== 'all') {
-        filtered = filtered.filter(s => s.category === selectedCategory);
+
+    if (selectedCategories && selectedCategories.length > 0) {
+        filtered = filtered.filter(s => selectedCategories.includes(s.category));
     }
-    
+
     renderSalonList(filtered);
     updateSalonCount(filtered.length);
     addSalonsToMap(filtered);
@@ -321,33 +348,57 @@ function setupEventListeners() {
     // Category filters
     document.querySelectorAll('.btn-filter').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            filterSalons(btn.dataset.category);
+            const category = btn.dataset.category;
+
+            if (category === 'all') {
+                // Dacă se apasă 'all', deselectează toate și arată tot
+                document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                filterSalons([]);
+            } else {
+                // Toggle pentru categoria specifică
+                btn.classList.toggle('active');
+
+                // Deselectează butonul 'all'
+                document.querySelector('.btn-filter[data-category="all"]')?.classList.remove('active');
+
+                // Colectează toate categoriile active
+                const activeCategories = Array.from(document.querySelectorAll('.btn-filter.active'))
+                    .map(b => b.dataset.category)
+                    .filter(c => c !== 'all');
+
+                // Dacă nu e nimic selectat, activează 'all'
+                if (activeCategories.length === 0) {
+                    document.querySelector('.btn-filter[data-category="all"]')?.classList.add('active');
+                    filterSalons([]);
+                } else {
+                    filterSalons(activeCategories);
+                }
+            }
         });
     });
-    
+
     // Search
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
-    
+
     searchForm?.addEventListener('submit', (e) => {
         e.preventDefault();
         searchSalons(searchInput.value);
     });
-    
+
     searchInput?.addEventListener('input', (e) => {
         if (e.target.value === '') {
-            filterSalons(selectedCategory);
+            filterSalons(selectedCategories);
         }
     });
-    
+
     // Sidebar toggle
     document.getElementById('toggleSidebar')?.addEventListener('click', () => {
         const sidebar = document.getElementById('sidebar');
         sidebar?.classList.toggle('collapsed');
     });
-    
+
     // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
         e.preventDefault();
