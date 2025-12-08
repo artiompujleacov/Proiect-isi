@@ -1,0 +1,67 @@
+{
+  "collections": {
+    "salons": {
+      "description": "Colecția principală cu saloanele de înfrumusețare",
+      "fields": {
+        "name": { "type": "string", "required": true, "description": "Numele oficial al salonului" },
+        "address": { "type": "string", "required": true, "description": "Adresa completă" },
+        "location": { "type": "GeoPoint", "required": true, "description": "Coordonate GPS (lat/lng)" },
+        "category": { "type": "string", "required": true, "enum": ["Coafor", "Nails", "Barber", "Spa", "Makeup", "Cosmetica"] },
+        "rating": { "type": "number", "required": false, "default": 0, "min": 0, "max": 5 },
+        "phone": { "type": "string", "required": true },
+        "website": { "type": "string", "required": false },
+        "images": { "type": "array", "items": "string", "description": "URL-uri către imagini" },
+        "openingHours": { "type": "map", "description": "Program zilnic" },
+        "services": {
+          "type": "array",
+          "items": {
+            "name": "string",
+            "price": "number",
+            "duration": "number"
+          }
+        },
+        "createdAt": { "type": "Timestamp", "required": true }
+      }
+    },
+    "users": {
+      "description": "Utilizatorii aplicației",
+      "fields": {
+        "uid": { "type": "string", "required": true, "description": "Firebase Auth UID" },
+        "name": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "phone": { "type": "string", "required": false },
+        "photo": { "type": "string", "required": false },
+        "favoriteSalons": { "type": "array", "items": "string", "description": "ID-uri saloane favorite" },
+        "createdAt": { "type": "Timestamp", "required": true }
+      }
+    },
+    "reviews": {
+      "description": "Recenziile utilizatorilor pentru saloane",
+      "fields": {
+        "salonId": { "type": "string", "required": true, "reference": "salons" },
+        "userId": { "type": "string", "required": true, "reference": "users" },
+        "rating": { "type": "number", "required": true, "min": 1, "max": 5 },
+        "comment": { "type": "string", "required": false },
+        "createdAt": { "type": "Timestamp", "required": true }
+      }
+    },
+    "categories": {
+      "description": "Categoriile de servicii beauty",
+      "fields": {
+        "name": { "type": "string", "required": true },
+        "icon": { "type": "string", "required": true, "description": "Clasa Bootstrap Icon" },
+        "description": { "type": "string", "required": false }
+      }
+    }
+  },
+  "indexes": [
+    { "collection": "salons", "fields": ["category", "rating"], "order": "DESC" },
+    { "collection": "reviews", "fields": ["salonId", "createdAt"], "order": "DESC" }
+  ],
+  "securityRules": {
+    "salons": "read: true, write: isAdmin",
+    "users": "read/write: isOwner",
+    "reviews": "read: true, write: isAuthenticated",
+    "categories": "read: true, write: isAdmin"
+  }
+}
