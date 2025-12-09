@@ -408,6 +408,73 @@ body {
     display: none !important;
 }
 
+
+/* ===== Sidebar Toggle Button ===== */
+#toggleSidebar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.3);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+#toggleSidebar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.4);
+}
+
+#toggleSidebar i {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+/* Button when sidebar is collapsed - fixed to left edge */
+.sidebar.collapsed ~ .toggle-btn-fixed,
+body .toggle-btn-fixed {
+    display: none;
+}
+
+body.sidebar-closed .toggle-btn-fixed {
+    display: flex !important;
+}
+
+.toggle-btn-fixed {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border: none;
+    border-radius: 0 15px 15px 0;
+    color: white;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 3px 0 15px rgba(233, 30, 140, 0.3);
+    z-index: 1100;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn-fixed:hover {
+    width: 48px;
+    box-shadow: 5px 0 20px rgba(233, 30, 140, 0.4);
+}
+
+.toggle-btn-fixed i {
+    font-size: 22px;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
     .sidebar {

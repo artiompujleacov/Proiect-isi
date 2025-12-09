@@ -71,11 +71,16 @@
 
     <!-- Main Content -->
     <div class="main-container">
+        <!-- Fixed Toggle Button - appears when sidebar is closed -->
+        <button class="toggle-btn-fixed" id="openSidebarBtn" title="Deschide filtre">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+        
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h5><i class="bi bi-funnel me-2"></i>Filtre</h5>
-                <button class="btn btn-sm btn-outline-secondary" id="toggleSidebar">
+                <button id="toggleSidebar" title="Închide filtre">
                     <i class="bi bi-chevron-left"></i>
                 </button>
             </div>

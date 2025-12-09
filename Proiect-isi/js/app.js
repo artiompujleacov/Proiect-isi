@@ -399,6 +399,24 @@ function setupEventListeners() {
         sidebar?.classList.toggle('collapsed');
     });
 
+
+     // Sidebar toggle - Close button (in header)
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const openSidebarBtn = document.getElementById('openSidebarBtn');
+    
+    toggleSidebar?.addEventListener('click', () => {
+        sidebar?.classList.add('collapsed');
+        document.body.classList.add('sidebar-closed');
+    });
+    
+    // Open button (fixed on left edge)
+    openSidebarBtn?.addEventListener('click', () => {
+        sidebar?.classList.remove('collapsed');
+        document.body.classList.remove('sidebar-closed');
+    });
+    
+
     // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
         e.preventDefault();
