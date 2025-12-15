@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ro">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/auth.css">
 </head>
+
 <body class="auth-page">
     <div class="auth-container">
         <div class="auth-card">
@@ -20,7 +22,22 @@
                 <h2>Creează cont</h2>
                 <p class="text-muted">Începe să descoperi saloane în apropierea ta</p>
             </div>
-            
+
+            <!-- Account Type Selection -->
+            <div class="mb-4">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="accountType" id="userType" value="user" checked>
+                    <label class="btn btn-outline-primary" for="userType">
+                        <i class="bi bi-person"></i> Utilizator
+                    </label>
+
+                    <input type="radio" class="btn-check" name="accountType" id="salonType" value="salon">
+                    <label class="btn btn-outline-primary" for="salonType">
+                        <i class="bi bi-shop"></i> Proprietar Salon
+                    </label>
+                </div>
+            </div>
+
             <form id="registerForm" class="auth-form">
                 <div class="mb-3">
                     <label for="name" class="form-label">Nume complet</label>
@@ -29,7 +46,7 @@
                         <input type="text" class="form-control" id="name" placeholder="Ion Popescu" required>
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
                     <div class="input-group">
@@ -37,7 +54,7 @@
                         <input type="email" class="form-control" id="email" placeholder="email@exemplu.com" required>
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="phone" class="form-label">Telefon (opțional)</label>
                     <div class="input-group">
@@ -45,58 +62,62 @@
                         <input type="tel" class="form-control" id="phone" placeholder="0712 345 678">
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="password" class="form-label">Parolă</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control" id="password" placeholder="Minim 6 caractere" required minlength="6">
+                        <input type="password" class="form-control" id="password" placeholder="Minim 6 caractere"
+                            required minlength="6">
                         <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="confirmPassword" class="form-label">Confirmă parola</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                        <input type="password" class="form-control" id="confirmPassword" placeholder="Repetă parola" required>
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="Repetă parola"
+                            required>
                     </div>
                 </div>
-                
+
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="terms" required>
                     <label class="form-check-label" for="terms">
                         Accept <a href="#">Termenii și condițiile</a>
                     </label>
                 </div>
-                
+
                 <div id="registerError" class="alert alert-danger d-none"></div>
                 <div id="registerSuccess" class="alert alert-success d-none"></div>
-                
+
                 <button type="submit" class="btn btn-primary w-100 btn-lg">
                     <i class="bi bi-person-plus me-2"></i>Creează cont
                 </button>
             </form>
-            
+
             <div class="auth-divider">
                 <span>sau</span>
             </div>
-            
+
             <button class="btn btn-outline-dark w-100 mb-3" id="googleRegisterBtn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="me-2" style="width: 20px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="me-2"
+                    style="width: 20px;">
                 Continuă cu Google
             </button>
-            
+
             <div class="auth-footer">
                 <p>Ai deja cont? <a href="login.html">Conectează-te</a></p>
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="js/firebase-config.js"></script>
     <script type="module" src="js/auth.js"></script>
 </body>
+
 </html>

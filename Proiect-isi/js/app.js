@@ -220,6 +220,15 @@ function addSalonsToMap(salons) {
     console.log(`✅ Added ${added} markers to map`);
 }
 
+function getPlaceholderImage() {
+    return 'data:image/svg+xml;base64,' + btoa(`
+        <svg width="70" height="70" xmlns="http://www.w3.org/2000/svg">
+            <rect width="70" height="70" fill="#e0e0e0"/>
+            <text x="50%" y="50%" font-size="24" text-anchor="middle" dy=".3em" fill="#999" font-family="Arial">S</text>
+        </svg>
+    `);
+}
+
 function renderSalonList(salons) {
     const list = document.getElementById('salonList');
     if (!list) return;
@@ -234,12 +243,13 @@ function renderSalonList(salons) {
         return;
     }
 
+    const placeholderImg = getPlaceholderImage();
     list.innerHTML = salons.map(salon => `
         <div class="salon-card" data-id="${salon.id}">
             <div class="salon-card-header">
-                <img src="${salon.images?.[0] || 'https://via.placeholder.com/70?text=S'}" 
+                <img src="${salon.images?.[0] || placeholderImg}" 
                      class="salon-image" 
-                     onerror="this.src='https://via.placeholder.com/70?text=S'">
+                     onerror="this.src='${placeholderImg}'">
                 <div class="salon-info">
                     <div class="salon-name">${salon.name}</div>
                     <span class="salon-category">${formatCategories(salon.category)}</span>
@@ -329,14 +339,18 @@ function searchSalons(query) {
         return;
     }
 
-    let filtered = salonsData.filter(s =>
-        s.name.toLowerCase().includes(term) ||
-        s.address.toLowerCase().includes(term) ||
-        s.category.toLowerCase().includes(term)
-    );
+    let filtered = salonsData.filter(s => {
+        const categoryText = formatCategories(s.category).toLowerCase();
+        return s.name.toLowerCase().includes(term) ||
+            s.address.toLowerCase().includes(term) ||
+            categoryText.includes(term);
+    });
 
     if (selectedCategories && selectedCategories.length > 0) {
-        filtered = filtered.filter(s => selectedCategories.includes(s.category));
+        filtered = filtered.filter(s => {
+            const salonCategories = getCategoriesArray(s.category);
+            return selectedCategories.every(cat => salonCategories.includes(cat));
+        });
     }
 
     renderSalonList(filtered);
@@ -400,22 +414,22 @@ function setupEventListeners() {
     });
 
 
-     // Sidebar toggle - Close button (in header)
+    // Sidebar toggle - Close button (in header)
     const sidebar = document.getElementById('sidebar');
     const toggleSidebar = document.getElementById('toggleSidebar');
     const openSidebarBtn = document.getElementById('openSidebarBtn');
-    
+
     toggleSidebar?.addEventListener('click', () => {
         sidebar?.classList.add('collapsed');
         document.body.classList.add('sidebar-closed');
     });
-    
+
     // Open button (fixed on left edge)
     openSidebarBtn?.addEventListener('click', () => {
         sidebar?.classList.remove('collapsed');
         document.body.classList.remove('sidebar-closed');
     });
-    
+
 
     // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {

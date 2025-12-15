@@ -1,34 +1,35 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    getDocs, 
-    addDoc, 
-    doc, 
+import {
+    getFirestore,
+    collection,
+    getDocs,
+    addDoc,
+    doc,
     getDoc,
-    query, 
-    where, 
+    setDoc,
+    query,
+    where,
     orderBy,
     onSnapshot,
     GeoPoint,
-    Timestamp 
+    Timestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { 
-    getAuth, 
-    signInWithEmailAndPassword, 
+import {
+    getAuth,
+    signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    signOut, 
+    signOut,
     onAuthStateChanged,
     GoogleAuthProvider,
     signInWithPopup,
     updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { 
-    getStorage, 
-    ref, 
-    uploadBytes, 
-    getDownloadURL 
+import {
+    getStorage,
+    ref,
+    uploadBytes,
+    getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // Firebase configuration
@@ -50,9 +51,9 @@ const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Export
-export { 
+export {
     app, db, auth, storage, googleProvider,
-    collection, getDocs, addDoc, doc, getDoc, query, where, orderBy, onSnapshot, GeoPoint, Timestamp,
+    collection, getDocs, addDoc, doc, getDoc, setDoc, query, where, orderBy, onSnapshot, GeoPoint, Timestamp,
     signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, updateProfile,
     ref, uploadBytes, getDownloadURL
 };
