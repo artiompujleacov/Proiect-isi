@@ -8,6 +8,7 @@ import {
     doc,
     getDoc,
     setDoc,
+    updateDoc,
     query,
     where,
     orderBy,
@@ -53,7 +54,7 @@ const googleProvider = new GoogleAuthProvider();
 // Export
 export {
     app, db, auth, storage, googleProvider,
-    collection, getDocs, addDoc, doc, getDoc, setDoc, query, where, orderBy, onSnapshot, GeoPoint, Timestamp,
+    collection, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, query, where, orderBy, onSnapshot, GeoPoint, Timestamp,
     signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, updateProfile,
     ref, uploadBytes, getDownloadURL
 };

@@ -1,4 +1,4 @@
-import { db, auth, collection, getDocs, onAuthStateChanged, signOut } from './firebase-config.js';
+import { db, auth, collection, getDocs, onAuthStateChanged, signOut, query, where, addDoc, updateDoc, doc, Timestamp } from './firebase-config.js';
 
 const ARCGIS_API_KEY = "AAPTxy8BH1VEsoebNVZXo8HurKyRKW0T3D3lBg7YtPpGSRQjCvrBOY6UXSxft-keBFm6o1e0npr6X7YkStQokX8eSyqhLDsn0wj7IAZOIzvdGLC6M0u-qjkhtML1gfIUUPFdXvYytz0fIbPgi_GlHHzgxKf4jtZEOgujDn7tMumLAlzOWRuyLDa856m8qrBpjedbBXSLlMBHGANuegJsqiLCOP-ddyEoiagXHp2FXcBXo9A.AT1_dliUr4kT";
 
@@ -23,18 +23,54 @@ async function initializeApp() {
     }
 }
 
-function handleAuthStateChange(user) {
+async function handleAuthStateChange(user) {
+    console.log("🚀 handleAuthStateChange called with user:", user ? user.uid : "null");
+    
     const authButtons = document.getElementById('authButtons');
     const userMenu = document.getElementById('userMenu');
     const userName = document.getElementById('userName');
+    const addSalonMenuItem = document.getElementById('addSalonMenuItem');
+    const menuDivider = document.getElementById('menuDivider');
 
     if (user) {
         authButtons?.classList.add('d-none');
         userMenu?.classList.remove('d-none');
         if (userName) userName.textContent = user.displayName || user.email?.split('@')[0];
+
+        // Check if user is salon owner
+        try {
+            console.log("🔍 Checking user type for UID:", user.uid);
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('uid', '==', user.uid));
+            const querySnapshot = await getDocs(q);
+
+            console.log("📊 Query results:", querySnapshot.size, "documents found");
+
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                console.log("👤 User data:", userData);
+                console.log("👤 User type:", userData.accountType);
+
+                if (userData.accountType === 'salon') {
+                    console.log("✅ User is salon owner - showing button");
+                    addSalonMenuItem?.classList.remove('d-none');
+                    if (menuDivider) menuDivider.style.display = 'block';
+                } else {
+                    console.log("❌ User is NOT salon owner - hiding button");
+                    addSalonMenuItem?.classList.add('d-none');
+                    if (menuDivider) menuDivider.style.display = 'none';
+                }
+            } else {
+                console.log("⚠️ No user document found in database");
+            }
+        } catch (error) {
+            console.error("❌ Error checking user type:", error);
+        }
     } else {
         authButtons?.classList.remove('d-none');
         userMenu?.classList.add('d-none');
+        addSalonMenuItem?.classList.add('d-none');
+        if (menuDivider) menuDivider.style.display = 'none';
     }
 }
 
@@ -244,7 +280,18 @@ function renderSalonList(salons) {
     }
 
     const placeholderImg = getPlaceholderImage();
-    list.innerHTML = salons.map(salon => `
+    list.innerHTML = salons.map(salon => {
+        const rating = typeof salon.rating === 'string' ? parseFloat(salon.rating) : (salon.rating || 0);
+        const reviewCount = salon.reviewCount || 0;
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        
+        let starsHtml = '★'.repeat(fullStars);
+        if (hasHalfStar) starsHtml += '⯨';
+        starsHtml += '☆'.repeat(emptyStars);
+        
+        return `
         <div class="salon-card" data-id="${salon.id}">
             <div class="salon-card-header">
                 <img src="${salon.images?.[0] || placeholderImg}" 
@@ -253,20 +300,42 @@ function renderSalonList(salons) {
                 <div class="salon-info">
                     <div class="salon-name">${salon.name}</div>
                     <span class="salon-category">${formatCategories(salon.category)}</span>
-                    <div class="salon-rating">${'★'.repeat(Math.floor(salon.rating || 0))} ${salon.rating || 'N/A'}</div>
+                    <div class="salon-rating">
+                        <span class="stars">${starsHtml}</span>
+                        <span class="rating-value">${rating.toFixed(1)}</span>
+                        <span class="review-count">(${reviewCount})</span>
+                    </div>
                 </div>
             </div>
             <div class="salon-address"><i class="bi bi-geo-alt-fill"></i> ${salon.address}</div>
+            <button class="btn btn-sm btn-outline-primary w-100 mt-2 view-details-btn" data-salon-id="${salon.id}">
+                <i class="bi bi-info-circle me-1"></i>Vezi detalii
+            </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     list.querySelectorAll('.salon-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const salon = salons.find(s => s.id === card.dataset.id);
+        card.addEventListener('click', (e) => {
+            if (!e.target.closest('.view-details-btn')) {
+                const salon = salons.find(s => s.id === card.dataset.id);
+                if (salon) {
+                    focusOnSalon(salon);
+                    list.querySelectorAll('.salon-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                }
+            }
+        });
+    });
+
+    // Add click handlers for view details buttons
+    list.querySelectorAll('.view-details-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const salonId = btn.dataset.salonId;
+            const salon = salons.find(s => s.id === salonId);
             if (salon) {
-                focusOnSalon(salon);
-                list.querySelectorAll('.salon-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
+                showSalonModal(salon);
             }
         });
     });
@@ -443,5 +512,282 @@ function setupEventListeners() {
     });
 }
 
+// Show salon modal with details and reviews
+async function showSalonModal(salon) {
+    const modal = new bootstrap.Modal(document.getElementById('salonModal'));
+    const modalTitle = document.getElementById('salonModalTitle');
+    const modalBody = document.getElementById('salonModalBody');
+    
+    modalTitle.textContent = salon.name;
+    
+    // Load reviews
+    const reviews = await loadSalonReviews(salon.id);
+    
+    const rating = typeof salon.rating === 'string' ? parseFloat(salon.rating) : (salon.rating || 0);
+    const reviewCount = salon.reviewCount || 0;
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let starsHtml = '★'.repeat(fullStars);
+    if (hasHalfStar) starsHtml += '⯨';
+    starsHtml += '☆'.repeat(emptyStars);
+    
+    const user = auth.currentUser;
+    const userHasReviewed = reviews.some(r => r.userId === user?.uid);
+    
+    // Check if user is a salon owner
+    let isSalonOwner = false;
+    if (user) {
+        try {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('uid', '==', user.uid));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                isSalonOwner = userData.accountType === 'salon';
+            }
+        } catch (error) {
+            console.error('Error checking user type:', error);
+        }
+    }
+    
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <img src="${salon.images?.[0] || getPlaceholderImage()}" class="img-fluid rounded mb-3" alt="${salon.name}">
+                <p><strong><i class="bi bi-geo-alt-fill me-2"></i>Adresă:</strong> ${salon.address}</p>
+                <p><strong><i class="bi bi-telephone-fill me-2"></i>Telefon:</strong> ${salon.phone || 'N/A'}</p>
+                <p><strong><i class="bi bi-tags-fill me-2"></i>Categorii:</strong> ${formatCategories(salon.category)}</p>
+                ${salon.description ? `<p><strong>Descriere:</strong> ${salon.description}</p>` : ''}
+            </div>
+            <div class="col-md-6">
+                <h6>Program:</h6>
+                <ul class="list-unstyled">
+                    ${Object.entries(salon.openingHours || {}).map(([day, hours]) => 
+                        `<li><strong>${day}:</strong> ${hours}</li>`
+                    ).join('')}
+                </ul>
+                
+                <h6 class="mt-3">Servicii:</h6>
+                <ul class="list-unstyled">
+                    ${(salon.services || []).map(service => 
+                        `<li>${service.name} - ${service.price} RON (${service.duration} min)</li>`
+                    ).join('')}
+                </ul>
+            </div>
+        </div>
+        
+        <hr class="my-4">
+        
+        <div class="reviews-section">
+            <h5 class="mb-3">
+                <i class="bi bi-star-fill me-2"></i>Recenzii
+                <span class="badge bg-primary ms-2">${rating.toFixed(1)} ${starsHtml} (${reviewCount})</span>
+            </h5>
+            
+            ${user && !userHasReviewed && !isSalonOwner ? `
+                <div class="card mb-4 bg-light">
+                    <div class="card-body">
+                        <h6>Adaugă o recenzie</h6>
+                        <form id="addReviewForm">
+                            <div class="mb-3">
+                                <label class="form-label">Rating:</label>
+                                <div class="star-rating-input">
+                                    ${[5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5].map(value => `
+                                        <input type="radio" name="rating" value="${value}" id="star${value}" required>
+                                        <label for="star${value}" title="${value} stele">${value >= 1 ? '★' : '⯨'}</label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Comentariu (opțional):</label>
+                                <textarea class="form-control" id="reviewComment" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-2"></i>Trimite recenzia
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            ` : isSalonOwner ? `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Proprietarii de saloane nu pot lăsa recenzii.
+                </div>
+            ` : !user ? `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Trebuie să fii autentificat pentru a lăsa o recenzie.
+                    <a href="login.html" class="alert-link">Autentifică-te aici</a>
+                </div>
+            ` : `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Ai lăsat deja o recenzie pentru acest salon.
+                </div>
+            `}
+            
+            <div id="reviewsList">
+                ${reviews.length > 0 ? reviews.map(review => {
+                    const reviewRating = parseFloat(review.rating);
+                    const reviewFullStars = Math.floor(reviewRating);
+                    const reviewHasHalfStar = reviewRating % 1 >= 0.5;
+                    const reviewEmptyStars = 5 - reviewFullStars - (reviewHasHalfStar ? 1 : 0);
+                    let reviewStarsHtml = '★'.repeat(reviewFullStars);
+                    if (reviewHasHalfStar) reviewStarsHtml += '⯨';
+                    reviewStarsHtml += '☆'.repeat(reviewEmptyStars);
+                    
+                    const date = review.createdAt?.toDate ? review.createdAt.toDate() : new Date(review.createdAt);
+                    
+                    return `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <strong>${review.userName || 'Anonim'}</strong>
+                                    <span class="text-warning">${reviewStarsHtml} ${reviewRating.toFixed(1)}</span>
+                                </div>
+                                ${review.comment ? `<p class="mb-1 mt-2">${review.comment}</p>` : ''}
+                                <small class="text-muted">${date.toLocaleDateString('ro-RO')}</small>
+                            </div>
+                        </div>
+                    `;
+                }).join('') : '<p class="text-muted">Încă nu există recenzii pentru acest salon.</p>'}
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Add form submit handler
+    const form = document.getElementById('addReviewForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleAddReview(salon.id, form);
+        });
+    }
+}
+
+// Load reviews for a salon
+async function loadSalonReviews(salonId) {
+    try {
+        const reviewsRef = collection(db, 'reviews');
+        const q = query(reviewsRef, where('salonId', '==', salonId), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        return [];
+    }
+}
+
+// Handle adding a review
+async function handleAddReview(salonId, form) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const user = auth.currentUser;
+    
+    if (!user) {
+        alert('Trebuie să fii autentificat pentru a lăsa o recenzie.');
+        return;
+    }
+    
+    const rating = parseFloat(form.querySelector('input[name="rating"]:checked')?.value);
+    const comment = document.getElementById('reviewComment').value.trim();
+    
+    if (!rating) {
+        alert('Te rog selectează un rating.');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Se trimite...';
+    
+    try {
+        // Add review to Firestore
+        const reviewData = {
+            salonId: salonId,
+            userId: user.uid,
+            userName: user.displayName || user.email.split('@')[0],
+            rating: rating,
+            comment: comment || '',
+            createdAt: Timestamp.now()
+        };
+        
+        await addDoc(collection(db, 'reviews'), reviewData);
+        
+        // Recalculate salon rating
+        await updateSalonRating(salonId);
+        
+        // Reload salon data
+        await loadSalons();
+        
+        // Close and reopen modal with updated data
+        const modal = bootstrap.Modal.getInstance(document.getElementById('salonModal'));
+        modal.hide();
+        
+        // Find updated salon
+        const updatedSalon = salonsData.find(s => s.id === salonId);
+        if (updatedSalon) {
+            setTimeout(() => showSalonModal(updatedSalon), 300);
+        }
+        
+    } catch (error) {
+        console.error('Error adding review:', error);
+        alert('Eroare la adăugarea recenziei: ' + error.message);
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Trimite recenzia';
+    }
+}
+
+// Update salon rating based on all reviews
+async function updateSalonRating(salonId) {
+    try {
+        const reviewsRef = collection(db, 'reviews');
+        const q = query(reviewsRef, where('salonId', '==', salonId));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            // No reviews, set rating to 0
+            const salonRef = doc(db, 'salons', salonId);
+            await updateDoc(salonRef, {
+                rating: 0,
+                reviewCount: 0,
+                updatedAt: Timestamp.now()
+            });
+            return;
+        }
+        
+        // Calculate average rating
+        let totalRating = 0;
+        snapshot.docs.forEach(doc => {
+            const rating = parseFloat(doc.data().rating);
+            totalRating += rating;
+        });
+        
+        const averageRating = totalRating / snapshot.size;
+        const reviewCount = snapshot.size;
+        
+        // Update salon document
+        const salonRef = doc(db, 'salons', salonId);
+        await updateDoc(salonRef, {
+            rating: parseFloat(averageRating.toFixed(1)),
+            reviewCount: reviewCount,
+            updatedAt: Timestamp.now()
+        });
+        
+        console.log(`✅ Updated salon ${salonId} rating: ${averageRating.toFixed(1)} (${reviewCount} reviews)`);
+        
+    } catch (error) {
+        console.error('Error updating salon rating:', error);
+        throw error;
+    }
+}
+
 // Export for debugging
-window.glowMe = { salonsData, filterSalons, searchSalons, loadSalons };
+window.glowMe = { salonsData, filterSalons, searchSalons, loadSalons, showSalonModal };

@@ -488,3 +488,69 @@ body.sidebar-closed .toggle-btn-fixed {
         left: -350px;
     }
 }
+
+/* ===== Star Rating Input ===== */
+.star-rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 5px;
+    font-size: 2rem;
+}
+
+.star-rating-input input[type="radio"] {
+    display: none;
+}
+
+.star-rating-input label {
+    cursor: pointer;
+    color: #ddd;
+    transition: color 0.2s;
+}
+
+.star-rating-input label:hover,
+.star-rating-input label:hover ~ label,
+.star-rating-input input[type="radio"]:checked ~ label {
+    color: #ffc107;
+}
+
+/* ===== Salon Card Improvements ===== */
+.salon-rating {
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.salon-rating .stars {
+    color: #ffc107;
+    font-size: 1rem;
+}
+
+.salon-rating .rating-value {
+    color: #333;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.salon-rating .review-count {
+    color: #666;
+    font-size: 0.85rem;
+    margin-left: 3px;
+}
+
+/* ===== Modal Improvements ===== */
+.modal-lg {
+    max-width: 900px;
+}
+
+.reviews-section .card {
+    border: 1px solid #e0e0e0;
+}
+
+.reviews-section .badge {
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}

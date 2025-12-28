@@ -278,10 +278,8 @@ async function handleSalonSetup() {
 
     // Get selected categories
     const categories = [];
-    document.querySelectorAll('.form-check-input[type="checkbox"]:checked').forEach(checkbox => {
-        if (!checkbox.id.includes('-closed')) {
-            categories.push(checkbox.value);
-        }
+    document.querySelectorAll('.category-checkbox .form-check-input:checked').forEach(checkbox => {
+        categories.push(checkbox.value);
     });
 
     // Get services
