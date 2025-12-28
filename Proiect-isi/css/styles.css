@@ -13,7 +13,8 @@
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     overflow: hidden;
 }
@@ -437,7 +438,7 @@ body {
 }
 
 /* Button when sidebar is collapsed - fixed to left edge */
-.sidebar.collapsed ~ .toggle-btn-fixed,
+.sidebar.collapsed~.toggle-btn-fixed,
 body .toggle-btn-fixed {
     display: none;
 }
@@ -483,7 +484,7 @@ body.sidebar-closed .toggle-btn-fixed {
         top: 0;
         height: 100%;
     }
-    
+
     .sidebar.collapsed {
         left: -350px;
     }
@@ -509,8 +510,8 @@ body.sidebar-closed .toggle-btn-fixed {
 }
 
 .star-rating-input label:hover,
-.star-rating-input label:hover ~ label,
-.star-rating-input input[type="radio"]:checked ~ label {
+.star-rating-input label:hover~label,
+.star-rating-input input[type="radio"]:checked~label {
     color: #ffc107;
 }
 

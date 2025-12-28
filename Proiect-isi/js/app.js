@@ -25,7 +25,7 @@ async function initializeApp() {
 
 async function handleAuthStateChange(user) {
     console.log("🚀 handleAuthStateChange called with user:", user ? user.uid : "null");
-    
+
     const authButtons = document.getElementById('authButtons');
     const userMenu = document.getElementById('userMenu');
     const userName = document.getElementById('userName');
@@ -286,11 +286,11 @@ function renderSalonList(salons) {
         const fullStars = Math.floor(rating);
         const hasHalfStar = rating % 1 >= 0.5;
         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-        
+
         let starsHtml = '★'.repeat(fullStars);
         if (hasHalfStar) starsHtml += '⯨';
         starsHtml += '☆'.repeat(emptyStars);
-        
+
         return `
         <div class="salon-card" data-id="${salon.id}">
             <div class="salon-card-header">
@@ -517,25 +517,25 @@ async function showSalonModal(salon) {
     const modal = new bootstrap.Modal(document.getElementById('salonModal'));
     const modalTitle = document.getElementById('salonModalTitle');
     const modalBody = document.getElementById('salonModalBody');
-    
+
     modalTitle.textContent = salon.name;
-    
+
     // Load reviews
     const reviews = await loadSalonReviews(salon.id);
-    
+
     const rating = typeof salon.rating === 'string' ? parseFloat(salon.rating) : (salon.rating || 0);
     const reviewCount = salon.reviewCount || 0;
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    
+
     let starsHtml = '★'.repeat(fullStars);
     if (hasHalfStar) starsHtml += '⯨';
     starsHtml += '☆'.repeat(emptyStars);
-    
+
     const user = auth.currentUser;
     const userHasReviewed = reviews.some(r => r.userId === user?.uid);
-    
+
     // Check if user is a salon owner
     let isSalonOwner = false;
     if (user) {
@@ -551,7 +551,7 @@ async function showSalonModal(salon) {
             console.error('Error checking user type:', error);
         }
     }
-    
+
     modalBody.innerHTML = `
         <div class="row">
             <div class="col-md-6">
@@ -564,16 +564,16 @@ async function showSalonModal(salon) {
             <div class="col-md-6">
                 <h6>Program:</h6>
                 <ul class="list-unstyled">
-                    ${Object.entries(salon.openingHours || {}).map(([day, hours]) => 
-                        `<li><strong>${day}:</strong> ${hours}</li>`
-                    ).join('')}
+                    ${Object.entries(salon.openingHours || {}).map(([day, hours]) =>
+        `<li><strong>${day}:</strong> ${hours}</li>`
+    ).join('')}
                 </ul>
                 
                 <h6 class="mt-3">Servicii:</h6>
                 <ul class="list-unstyled">
-                    ${(salon.services || []).map(service => 
-                        `<li>${service.name} - ${service.price} RON (${service.duration} min)</li>`
-                    ).join('')}
+                    ${(salon.services || []).map(service =>
+        `<li>${service.name} - ${service.price} RON (${service.duration} min)</li>`
+    ).join('')}
                 </ul>
             </div>
         </div>
@@ -630,17 +630,17 @@ async function showSalonModal(salon) {
             
             <div id="reviewsList">
                 ${reviews.length > 0 ? reviews.map(review => {
-                    const reviewRating = parseFloat(review.rating);
-                    const reviewFullStars = Math.floor(reviewRating);
-                    const reviewHasHalfStar = reviewRating % 1 >= 0.5;
-                    const reviewEmptyStars = 5 - reviewFullStars - (reviewHasHalfStar ? 1 : 0);
-                    let reviewStarsHtml = '★'.repeat(reviewFullStars);
-                    if (reviewHasHalfStar) reviewStarsHtml += '⯨';
-                    reviewStarsHtml += '☆'.repeat(reviewEmptyStars);
-                    
-                    const date = review.createdAt?.toDate ? review.createdAt.toDate() : new Date(review.createdAt);
-                    
-                    return `
+        const reviewRating = parseFloat(review.rating);
+        const reviewFullStars = Math.floor(reviewRating);
+        const reviewHasHalfStar = reviewRating % 1 >= 0.5;
+        const reviewEmptyStars = 5 - reviewFullStars - (reviewHasHalfStar ? 1 : 0);
+        let reviewStarsHtml = '★'.repeat(reviewFullStars);
+        if (reviewHasHalfStar) reviewStarsHtml += '⯨';
+        reviewStarsHtml += '☆'.repeat(reviewEmptyStars);
+
+        const date = review.createdAt?.toDate ? review.createdAt.toDate() : new Date(review.createdAt);
+
+        return `
                         <div class="card mb-2">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
@@ -652,13 +652,13 @@ async function showSalonModal(salon) {
                             </div>
                         </div>
                     `;
-                }).join('') : '<p class="text-muted">Încă nu există recenzii pentru acest salon.</p>'}
+    }).join('') : '<p class="text-muted">Încă nu există recenzii pentru acest salon.</p>'}
             </div>
         </div>
     `;
-    
+
     modal.show();
-    
+
     // Add form submit handler
     const form = document.getElementById('addReviewForm');
     if (form) {
@@ -675,7 +675,7 @@ async function loadSalonReviews(salonId) {
         const reviewsRef = collection(db, 'reviews');
         const q = query(reviewsRef, where('salonId', '==', salonId), orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
-        
+
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -690,23 +690,23 @@ async function loadSalonReviews(salonId) {
 async function handleAddReview(salonId, form) {
     const submitBtn = form.querySelector('button[type="submit"]');
     const user = auth.currentUser;
-    
+
     if (!user) {
         alert('Trebuie să fii autentificat pentru a lăsa o recenzie.');
         return;
     }
-    
+
     const rating = parseFloat(form.querySelector('input[name="rating"]:checked')?.value);
     const comment = document.getElementById('reviewComment').value.trim();
-    
+
     if (!rating) {
         alert('Te rog selectează un rating.');
         return;
     }
-    
+
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Se trimite...';
-    
+
     try {
         // Add review to Firestore
         const reviewData = {
@@ -717,29 +717,29 @@ async function handleAddReview(salonId, form) {
             comment: comment || '',
             createdAt: Timestamp.now()
         };
-        
+
         await addDoc(collection(db, 'reviews'), reviewData);
-        
+
         // Recalculate salon rating
         await updateSalonRating(salonId);
-        
+
         // Reload salon data
         await loadSalons();
-        
+
         // Close and reopen modal with updated data
         const modal = bootstrap.Modal.getInstance(document.getElementById('salonModal'));
         modal.hide();
-        
+
         // Find updated salon
         const updatedSalon = salonsData.find(s => s.id === salonId);
         if (updatedSalon) {
             setTimeout(() => showSalonModal(updatedSalon), 300);
         }
-        
+
     } catch (error) {
         console.error('Error adding review:', error);
         alert('Eroare la adăugarea recenziei: ' + error.message);
-        
+
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Trimite recenzia';
     }
@@ -751,7 +751,7 @@ async function updateSalonRating(salonId) {
         const reviewsRef = collection(db, 'reviews');
         const q = query(reviewsRef, where('salonId', '==', salonId));
         const snapshot = await getDocs(q);
-        
+
         if (snapshot.empty) {
             // No reviews, set rating to 0
             const salonRef = doc(db, 'salons', salonId);
@@ -762,17 +762,17 @@ async function updateSalonRating(salonId) {
             });
             return;
         }
-        
+
         // Calculate average rating
         let totalRating = 0;
         snapshot.docs.forEach(doc => {
             const rating = parseFloat(doc.data().rating);
             totalRating += rating;
         });
-        
+
         const averageRating = totalRating / snapshot.size;
         const reviewCount = snapshot.size;
-        
+
         // Update salon document
         const salonRef = doc(db, 'salons', salonId);
         await updateDoc(salonRef, {
@@ -780,9 +780,9 @@ async function updateSalonRating(salonId) {
             reviewCount: reviewCount,
             updatedAt: Timestamp.now()
         });
-        
+
         console.log(`✅ Updated salon ${salonId} rating: ${averageRating.toFixed(1)} (${reviewCount} reviews)`);
-        
+
     } catch (error) {
         console.error('Error updating salon rating:', error);
         throw error;
