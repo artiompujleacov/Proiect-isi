@@ -318,11 +318,19 @@ function renderSalonList(salons) {
     list.querySelectorAll('.salon-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if (!e.target.closest('.view-details-btn')) {
-                const salon = salons.find(s => s.id === card.dataset.id);
-                if (salon) {
-                    focusOnSalon(salon);
-                    list.querySelectorAll('.salon-card').forEach(c => c.classList.remove('active'));
-                    card.classList.add('active');
+                const salonId = card.dataset.id;
+
+                // If in route mode, toggle selection
+                if (routeMode) {
+                    toggleSalonForRoute(salonId);
+                } else {
+                    // Normal behavior - focus on salon
+                    const salon = salons.find(s => s.id === salonId);
+                    if (salon) {
+                        focusOnSalon(salon);
+                        list.querySelectorAll('.salon-card').forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                    }
                 }
             }
         });
@@ -510,6 +518,9 @@ function setupEventListeners() {
             console.error("Logout error:", error);
         }
     });
+
+    // Setup route planning listeners
+    setupRouteListeners();
 }
 
 // Show salon modal with details and reviews
@@ -791,3 +802,427 @@ async function updateSalonRating(salonId) {
 
 // Export for debugging
 window.glowMe = { salonsData, filterSalons, searchSalons, loadSalons, showSalonModal };
+
+// ==================== ROUTE PLANNING FUNCTIONALITY ====================
+
+let routeMode = false;
+let selectedSalonsForRoute = [];
+let routeLayer = null;
+
+function setupRouteListeners() {
+    // Start route planning
+    document.getElementById('startRouteBtn')?.addEventListener('click', () => {
+        activateRouteMode();
+    });
+
+    // Cancel route planning
+    document.getElementById('cancelRouteBtn')?.addEventListener('click', () => {
+        deactivateRouteMode();
+    });
+
+    // Calculate route
+    document.getElementById('calculateRouteBtn')?.addEventListener('click', () => {
+        calculateOptimalRoute();
+    });
+
+    // Clear route
+    document.getElementById('clearRouteBtn')?.addEventListener('click', () => {
+        clearRoute();
+    });
+}
+
+function activateRouteMode() {
+    routeMode = true;
+    selectedSalonsForRoute = [];
+
+    document.getElementById('startRouteBtn').classList.add('d-none');
+    document.getElementById('routeMode').classList.remove('d-none');
+    document.getElementById('routeStats').classList.add('d-none');
+
+    updateSelectedSalonsList();
+
+    // Update salon cards to show selection mode
+    document.querySelectorAll('.salon-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.style.border = '2px solid transparent';
+    });
+
+    console.log('✅ Route mode activated');
+}
+
+function deactivateRouteMode() {
+    routeMode = false;
+    selectedSalonsForRoute = [];
+
+    document.getElementById('startRouteBtn').classList.remove('d-none');
+    document.getElementById('routeMode').classList.add('d-none');
+
+    // Reset salon cards
+    document.querySelectorAll('.salon-card').forEach(card => {
+        card.style.border = '';
+        card.classList.remove('route-selected');
+    });
+
+    clearRoute();
+    console.log('✅ Route mode deactivated');
+}
+
+function toggleSalonForRoute(salonId) {
+    if (!routeMode) return;
+
+    const salon = salonsData.find(s => s.id === salonId);
+    if (!salon) return;
+
+    const index = selectedSalonsForRoute.findIndex(s => s.id === salonId);
+
+    if (index > -1) {
+        // Deselect
+        selectedSalonsForRoute.splice(index, 1);
+    } else {
+        // Select (max 8 salons)
+        if (selectedSalonsForRoute.length >= 8) {
+            alert('Poți selecta maxim 8 saloane pentru traseu!');
+            return;
+        }
+        selectedSalonsForRoute.push(salon);
+    }
+
+    updateSelectedSalonsList();
+    updateSalonCardStyles();
+
+    // Enable/disable calculate button
+    const calculateBtn = document.getElementById('calculateRouteBtn');
+    calculateBtn.disabled = selectedSalonsForRoute.length < 2;
+}
+
+function updateSelectedSalonsList() {
+    // Update counter in the info alert
+    const counterElement = document.getElementById('selectedCount');
+    if (counterElement) {
+        counterElement.textContent = selectedSalonsForRoute.length;
+    }
+
+    // Update salon card numbers to show selection order
+    updateSalonCardStyles();
+}
+
+function updateSalonCardStyles() {
+    document.querySelectorAll('.salon-card').forEach(card => {
+        const salonId = card.dataset.id;
+        const selectedIndex = selectedSalonsForRoute.findIndex(s => s.id === salonId);
+        const isSelected = selectedIndex > -1;
+
+        // Remove existing route badge if any
+        const existingBadge = card.querySelector('.route-order-badge');
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+
+        if (isSelected) {
+            card.style.border = '2px solid #0d6efd';
+            card.classList.add('route-selected');
+
+            // Add order badge
+            const badge = document.createElement('span');
+            badge.className = 'route-order-badge badge bg-primary position-absolute';
+            badge.style.top = '5px';
+            badge.style.right = '5px';
+            badge.style.fontSize = '0.8rem';
+            badge.textContent = selectedIndex + 1;
+
+            card.style.position = 'relative';
+            card.appendChild(badge);
+        } else {
+            card.style.border = '2px solid transparent';
+            card.classList.remove('route-selected');
+        }
+    });
+}
+
+function removeSalonFromRoute(salonId) {
+    const index = selectedSalonsForRoute.findIndex(s => s.id === salonId);
+    if (index > -1) {
+        selectedSalonsForRoute.splice(index, 1);
+        updateSelectedSalonsList();
+        updateSalonCardStyles();
+
+        const calculateBtn = document.getElementById('calculateRouteBtn');
+        calculateBtn.disabled = selectedSalonsForRoute.length < 2;
+    }
+}
+
+async function calculateOptimalRoute() {
+    if (selectedSalonsForRoute.length < 2) {
+        alert('Selectează cel puțin 2 saloane pentru traseu!');
+        return;
+    }
+
+    console.log('🗺️ Calculating route for', selectedSalonsForRoute.length, 'salons...');
+
+    const calculateBtn = document.getElementById('calculateRouteBtn');
+    calculateBtn.disabled = true;
+    calculateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Se calculează...';
+
+    try {
+        // Load routing modules
+        const modules = await new Promise((resolve, reject) => {
+            require([
+                "esri/rest/route",
+                "esri/rest/support/RouteParameters",
+                "esri/rest/support/FeatureSet",
+                "esri/Graphic",
+                "esri/layers/GraphicsLayer"
+            ], (route, RouteParameters, FeatureSet, Graphic, GraphicsLayer) => {
+                resolve({ route, RouteParameters, FeatureSet, Graphic, GraphicsLayer });
+            }, reject);
+        });
+
+        const { route, RouteParameters, FeatureSet, Graphic, GraphicsLayer } = modules;
+
+        const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
+
+        // Create route parameters
+        const routeParams = new RouteParameters({
+            stops: new FeatureSet({
+                features: selectedSalonsForRoute.map(salon => {
+                    return new Graphic({
+                        geometry: {
+                            type: "point",
+                            longitude: salon.location.longitude,
+                            latitude: salon.location.latitude
+                        },
+                        attributes: {
+                            Name: salon.name
+                        }
+                    });
+                })
+            }),
+            returnDirections: true,
+            directionsLanguage: "ro",
+            returnStops: true,
+            returnRoutes: true
+        });
+
+        console.log('📍 Sending route request...');
+
+        // Solve route
+        const result = await route.solve(routeUrl, routeParams);
+        console.log('✅ Route calculated:', result);
+
+        displayRoute(result, Graphic, GraphicsLayer);
+
+        calculateBtn.disabled = false;
+        calculateBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Calculează';
+
+    } catch (error) {
+        console.error('❌ Route calculation failed:', error);
+
+        let errorMsg = 'Nu s-a putut calcula traseul.';
+        if (error.details && error.details.messages) {
+            errorMsg += '\nDetalii: ' + error.details.messages.join(', ');
+        } else if (error.message) {
+            errorMsg += '\nEroare: ' + error.message;
+        }
+
+        alert(errorMsg);
+
+        calculateBtn.disabled = false;
+        calculateBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Calculează';
+    }
+}
+
+function displayRoute(result, Graphic, GraphicsLayer) {
+    if (!result || !result.routeResults || result.routeResults.length === 0) {
+        alert('Nu s-a putut genera traseul.');
+        return;
+    }
+
+    const routeResult = result.routeResults[0];
+    const route = routeResult.route;
+    const directions = routeResult.directions;
+
+    // Remove old route layer
+    if (routeLayer) {
+        map.remove(routeLayer);
+    }
+
+    // Create new route layer
+    routeLayer = new GraphicsLayer();
+
+    // Array of colors for each segment between stops
+    const segmentColors = [
+        [34, 139, 34, 0.9],    // Verde (1→2)
+        [220, 20, 60, 0.9],    // Roșu (2→3)
+        [0, 0, 0, 0.9],        // Negru (3→4)
+        [255, 140, 0, 0.9],    // Portocaliu (4→5)
+        [138, 43, 226, 0.9],   // Mov (5→6)
+        [0, 191, 255, 0.9],    // Albastru deschis (6→7)
+        [255, 20, 147, 0.9],   // Roz (7→8)
+        [255, 215, 0, 0.9]     // Auriu (8+)
+    ];
+
+    // Try to get route geometry and split it by stops
+    if (route.geometry && route.geometry.paths && route.geometry.paths.length > 0) {
+        const routePath = route.geometry.paths[0];
+
+        // If we have stop features from directions, use them to split the route
+        if (directions && directions.features && directions.features.length > 0) {
+            // Group direction features by stops
+            let currentSegmentIndex = 0;
+            let currentSegmentPaths = [];
+
+            directions.features.forEach((feature, idx) => {
+                const maneuverType = feature.attributes?.maneuverType;
+
+                // Add geometry paths to current segment
+                if (feature.geometry && feature.geometry.paths) {
+                    feature.geometry.paths.forEach(path => {
+                        currentSegmentPaths.push(...path);
+                    });
+                }
+
+                // Check if this is the last feature in current segment or end of route
+                const isLastInSegment = (idx === directions.features.length - 1) ||
+                    (maneuverType === 'esriDMTStop' || maneuverType === 'esriDMTDepart');
+
+                if (currentSegmentPaths.length > 0 && (isLastInSegment || maneuverType === 'esriDMTStop')) {
+                    // Create a line for this segment
+                    const color = segmentColors[currentSegmentIndex % segmentColors.length];
+                    const segmentSymbol = {
+                        type: "simple-line",
+                        color: color,
+                        width: 6,
+                        cap: "round",
+                        join: "round"
+                    };
+
+                    const segmentGraphic = new Graphic({
+                        geometry: {
+                            type: "polyline",
+                            paths: [currentSegmentPaths]
+                        },
+                        symbol: segmentSymbol
+                    });
+
+                    routeLayer.add(segmentGraphic);
+
+                    // Move to next segment
+                    if (maneuverType === 'esriDMTStop') {
+                        currentSegmentIndex++;
+                        currentSegmentPaths = [];
+                    }
+                }
+            });
+        } else {
+            // Fallback: draw entire route in single color
+            const routeSymbol = {
+                type: "simple-line",
+                color: segmentColors[0],
+                width: 6
+            };
+
+            const routeGraphic = new Graphic({
+                geometry: route.geometry,
+                symbol: routeSymbol
+            });
+
+            routeLayer.add(routeGraphic);
+        }
+    }
+
+    // Add numbered markers for stops
+    selectedSalonsForRoute.forEach((salon, index) => {
+        const stopSymbol = {
+            type: "simple-marker",
+            style: "circle",
+            color: [255, 255, 255],
+            size: "24px",
+            outline: {
+                color: [0, 112, 255],
+                width: 3
+            }
+        };
+
+        const stopGraphic = new Graphic({
+            geometry: {
+                type: "point",
+                longitude: salon.location.longitude,
+                latitude: salon.location.latitude
+            },
+            symbol: stopSymbol
+        });
+
+        routeLayer.add(stopGraphic);
+
+        // Add number label
+        const textSymbol = {
+            type: "text",
+            color: [0, 112, 255],
+            text: (index + 1).toString(),
+            font: {
+                size: 14,
+                weight: "bold"
+            },
+            yoffset: 0
+        };
+
+        const textGraphic = new Graphic({
+            geometry: {
+                type: "point",
+                longitude: salon.location.longitude,
+                latitude: salon.location.latitude
+            },
+            symbol: textSymbol
+        });
+
+        routeLayer.add(textGraphic);
+    });
+
+    map.add(routeLayer);
+
+    // Zoom to route extent
+    view.goTo({
+        target: route.geometry,
+        zoom: 13
+    });
+
+    // Display route stats
+    displayRouteStats(routeResult);
+
+    console.log('✅ Route displayed on map');
+}
+
+function displayRouteStats(routeResult) {
+    const directions = routeResult.directions;
+
+    // Calculate total distance in km
+    const totalDistance = (directions.totalLength / 1000).toFixed(2); // Convert meters to km
+
+    // Calculate total time
+    const totalMinutes = Math.round(directions.totalTime);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const timeText = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+
+    // Update UI
+    document.getElementById('routeDistance').textContent = `${totalDistance} km`;
+    document.getElementById('routeTime').textContent = timeText;
+    document.getElementById('routeStops').textContent = selectedSalonsForRoute.length;
+    document.getElementById('routeStats').classList.remove('d-none');
+
+    console.log(`📊 Route: ${totalDistance}km, ${timeText}, ${selectedSalonsForRoute.length} stops`);
+}
+
+function clearRoute() {
+    if (routeLayer) {
+        map.remove(routeLayer);
+        routeLayer = null;
+    }
+
+    document.getElementById('routeStats').classList.add('d-none');
+    console.log('✅ Route cleared');
+}
+
+// Add to window.glowMe for external access
+window.glowMe.removeSalonFromRoute = removeSalonFromRoute;
+window.glowMe.toggleSalonForRoute = toggleSalonForRoute;

@@ -36,6 +36,11 @@
                             <i class="bi bi-map me-1"></i> Hartă
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">
+                            <i class="bi bi-graph-up me-1"></i> Analytics
+                        </a>
+                    </li>
                 </ul>
 
                 <!-- Search Bar -->
@@ -118,6 +123,70 @@
                     <button class="btn btn-filter" data-category="Make-up">
                         <i class="bi bi-palette"></i> Make-up
                     </button>
+                </div>
+            </div>
+
+            <!-- Route Planning Section -->
+            <div class="filter-section">
+                <h6><i class="bi bi-map me-2"></i>Planificare Traseu</h6>
+                <button class="btn btn-primary w-100 mb-2" id="startRouteBtn">
+                    <i class="bi bi-pin-map-fill me-2"></i>Selectează Saloane pentru Traseu
+                </button>
+                <div id="routeMode" class="d-none">
+                    <div class="alert alert-info py-2 px-3 mb-2">
+                        <small><i class="bi bi-info-circle me-1"></i>Selectați 2-8 saloane | <strong><span
+                                    id="selectedCount">0</span> selectate</strong></small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success flex-fill" id="calculateRouteBtn" disabled>
+                            <i class="bi bi-arrow-clockwise me-1"></i>Calculează
+                        </button>
+                        <button class="btn btn-secondary flex-fill" id="cancelRouteBtn">
+                            <i class="bi bi-x-lg me-1"></i>Anulează
+                        </button>
+                    </div>
+                    <div id="routeStats" class="mt-3 d-none">
+                        <div class="card bg-light">
+                            <div class="card-body p-3">
+                                <h6 class="mb-2"><i class="bi bi-speedometer2 me-2"></i>Detalii Traseu</h6>
+                                <div class="small">
+                                    <div class="mb-1">
+                                        <strong>Distanță:</strong> <span id="routeDistance">-</span>
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Timp:</strong> <span id="routeTime">-</span>
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Opriri:</strong> <span id="routeStops">-</span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 pt-2 border-top">
+                                    <small class="text-muted d-block mb-1"><strong>Legendă Segmente:</strong></small>
+                                    <div class="d-flex flex-wrap gap-1 small">
+                                        <span><span class="route-color-dot"
+                                                style="background: rgb(34, 139, 34);"></span> 1→2</span>
+                                        <span><span class="route-color-dot"
+                                                style="background: rgb(220, 20, 60);"></span> 2→3</span>
+                                        <span><span class="route-color-dot" style="background: rgb(0, 0, 0);"></span>
+                                            3→4</span>
+                                        <span><span class="route-color-dot"
+                                                style="background: rgb(255, 140, 0);"></span> 4→5</span>
+                                        <span><span class="route-color-dot"
+                                                style="background: rgb(138, 43, 226);"></span> 5→6</span>
+                                        <span><span class="route-color-dot"
+                                                style="background: rgb(0, 191, 255);"></span> 6→7</span>
+                                        <span><span class="route-color-dot"
+                                                style="background: rgb(255, 20, 147);"></span> 7→8</span>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-sm btn-outline-danger w-100 mt-2" id="clearRouteBtn">
+                                    <i class="bi bi-trash me-1"></i>Șterge Traseu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
